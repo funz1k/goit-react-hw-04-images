@@ -1,4 +1,4 @@
-import ImageItem from "components/ImageItem/ImageItem";
+import ImageItem from "../ImageItem";
 import { ImageGallery } from "./ImageList.styled";
 
 const ImageList = ({ images, largeImage, value }) => (

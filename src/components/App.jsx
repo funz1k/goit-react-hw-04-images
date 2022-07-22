@@ -1,10 +1,11 @@
 import { Component } from 'react';
+import { ToastContainer } from 'react-toastify';
 import SearchApi from 'service/Api';
-import Container from './Container/Container';
-import ImageList from './ImageList/ImageList';
-import Loader from './Loader/Loader';
-import LoadMoreBtn from './LoadMoreBtn/LoadMoreBtn';
-import ModalLargeImg from './Modal/Modal';
+import Container from './Container';
+import ImageList from './ImageList';
+import Loader from './Loader';
+import LoadMoreBtn from './LoadMoreBtn';
+import ModalLargeImg from './Modal';
 import SearchBar from './SearchBar';
 
 
@@ -87,6 +88,7 @@ export class App extends Component {
         {images.length !== 0 &&
           (loading ? <Loader /> : <LoadMoreBtn onClick={this.handleLoadMore} />)}
         {showModal && <ModalLargeImg onClose={this.onClose}>{largeImage}</ModalLargeImg>}
+        <ToastContainer autoClose={3000} />
       </Container>
     )
   }

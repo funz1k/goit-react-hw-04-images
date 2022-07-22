@@ -1,17 +1,14 @@
-import React from 'react';
-import { Title, Section } from './Container.styled';
-import PropTypes from 'prop-types';
+import PropTypes from 'prop-types'
+import { Section } from './Container.styled';
 
-const Container = ({ title, children }) => (
+const Container = ({ children }) => (
     <Section>
-        <Title>{title}</Title>
         {children}
     </Section>
 );
 
-Section.propTypes = {
-    title: PropTypes.string,
+Container.propTypes = {
     children: PropTypes.node,
-};
+}
 
-export default Container;
+export default Container

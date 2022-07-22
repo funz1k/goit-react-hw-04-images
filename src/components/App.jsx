@@ -1,85 +1,93 @@
 import { Component } from 'react';
-import { nanoid } from 'nanoid';
-import Container from './Container';
-import AppContainer from './AppContainer';
-import ContactsForm from "./ContactsForm";
-import ContactList from './ContactList';
-import ContactsFilter from './ContactsFilter';
+import SearchApi from 'service/Api';
+import Container from './Container/Container';
+import ImageList from './ImageList/ImageList';
+import Loader from './Loader/Loader';
+import LoadMoreBtn from './LoadMoreBtn/LoadMoreBtn';
+import ModalLargeImg from './Modal/Modal';
+import SearchBar from './SearchBar';
+
 
 
 export class App extends Component {
   state = {
-    contacts: [
-      { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-      { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-      { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-      { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-    ],
-    filter: '',
+    images: [],
+    largeImage: null,
+    page: 1,
+    value: "",
+    loading: false,
+    showModal: false,
+    error: null,
   }
+  componentDidUpdate(_, prevState) {
+    const { value, page } = this.state;
+    const options = { value, page };
 
-  componentDidMount() {
-    const contactsStorage = localStorage.getItem('contacts');
-    const parseStorageContacts = JSON.parse(contactsStorage);
-    console.log(parseStorageContacts);
+    if (prevState.value !== value) {
+      this.setState(() => ({ loading: true, images: [], error: null }));
 
-    if (parseStorageContacts) {
-      this.setState({ contacts: parseStorageContacts })
-    }
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-
-    if (this.state.contacts !== prevState.contacts) {
-      localStorage.setItem('contacts', JSON.stringify(this.state.contacts));
-    }
-  }
-
-  addContact = (name, number) => {
-    const contact = {
-      id: nanoid(),
-      name,
-      number,
+      SearchApi(options).then((images) => {
+        if (images.hits.length === 0) {
+          this.setState((error) => ({ error }));
+        }
+        this.setState({ images: images.hits });
+      })
+        .catch((error) => this.setState({ error }))
+        .finally(() => this.setState({ loading: false }));
     }
 
-    const findContact = this.state.contacts.find(contact =>
-      contact.name.toLowerCase().includes(name.toLowerCase())
-    );
+    if (prevState.page !== page && page !== 1) {
+      this.setState(() => ({ loading: true }));
 
-    findContact
-      ? alert('This name is already in contact')
-      : this.setState(({ contacts }) => ({ contacts: [contact, ...contacts] }));
+      SearchApi(options)
+        .then((images) =>
+          this.setState({
+            images: [...prevState.images, ...images.hits],
+          })
+        )
+        .finally(() => this.setState({ loading: false }));
+    }
+  }
+  handleSubmit = (value) => {
+    this.setState({
+      value: value,
+      page: 1
+    })
   }
 
-  removeContact = id => {
-    this.setState(prevState => ({
-      contacts: prevState.contacts.filter(contact => contact.id !== id),
-    }))
-  }
+  toggleModal = () => {
+    this.setState(({ showModal }) => ({ showModal: !showModal }));
+  };
 
-  onFilterContact = e => {
-    const { value } = e.currentTarget;
+  onClose = (e) => {
+    if (e.target === e.currentTarget || e.code === "Escape") {
+      this.toggleModal();
+    }
+  };
 
-    this.setState({ filter: value });
-  }
+  handleClickImage = (largeImage) => {
+    this.toggleModal();
+    this.setState({ largeImage });
+  };
+
+
+  handleLoadMore = () => {
+    this.setState((prevState) => ({ page: prevState.page + 1 }));
+  };
 
   render() {
-    const { contacts, filter } = this.state;
-    const normalizeFilter = filter.toLowerCase();
-    const visibleContacts = contacts.filter(contact =>
-      contact.name.toLowerCase().includes(normalizeFilter)
-    );
+
+    const { images, loading, showModal, largeImage, value } = this.state;
 
     return (
-      <AppContainer title="Phonebook">
-        <Container title='Add Contacts:'>
-          <ContactsForm onSubmit={this.addContact} />
-        </Container>
-        <Container title='Contacts:'>
-          <ContactsFilter filter={filter} onChange={this.onFilterContact} />
-          <ContactList contacts={visibleContacts} removeContact={this.removeContact} />
-        </Container>
-      </AppContainer>
-    );
+      <Container>
+        <SearchBar onSubmit={this.handleSubmit} />
+        {loading && <Loader />}
+        {images && <ImageList images={images} largeImage={this.handleClickImage} value={value} />}
+        {images.length !== 0 &&
+          (loading ? <Loader /> : <LoadMoreBtn onClick={this.handleLoadMore} />)}
+        {showModal && <ModalLargeImg onClose={this.onClose}>{largeImage}</ModalLargeImg>}
+      </Container>
+    )
   }
 }

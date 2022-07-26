@@ -1,26 +1,22 @@
-import React from 'react';
 import { PropTypes } from "prop-types";
-import { Component } from "react";
+import { useState } from "react";
 import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { IconContext } from "react-icons";
 import { FaSearch } from "react-icons/fa";
 import { Header, SearchForm, SearchFormButton, SearchFormButtonLabel, SearchFormInput } from "./SearchBar.styled";
 
-class SearchBar extends Component {
-    state = {
-        searchValue: '',
-    }
+const SearchBar = ({ onSubmit }) => {
+    const [searchValue, setSearchValue] = useState('');
 
-    handleChageSearchValue = e => {
+    const handleSearchValue = e => {
         const { value } = e.currentTarget;
 
-        this.setState({ searchValue: value })
+        setSearchValue(value);
     }
 
-    handleSubmit = e => {
-        const { searchValue } = this.state
+    const handleSubmit = e => {
         e.preventDefault();
+
         if (searchValue.trim() === '') {
             toast.error("Please enter something!", {
                 position: "top-right",
@@ -33,37 +29,36 @@ class SearchBar extends Component {
             });
             return
         }
-        this.props.onSubmit(searchValue)
-        this.resetInput();
+
+        onSubmit(searchValue);
+        resetInput();
     }
 
-    resetInput = () => {
-        this.setState({ searchValue: '' })
+    const resetInput = () => {
+        setSearchValue('');
     }
-    render() {
 
-        return (
-            <Header>
-                <SearchForm onSubmit={this.handleSubmit}>
-                    <SearchFormButton type="submit">
-                        <IconContext.Provider value={{ color: "blue", verticalAlign: 'middle' }}>
-                            <FaSearch />
-                        </IconContext.Provider>
-                        <SearchFormButtonLabel>Search</SearchFormButtonLabel>
-                    </SearchFormButton>
+    return (
+        <Header>
+            <SearchForm onSubmit={handleSubmit}>
+                <SearchFormButton type="submit">
+                    <IconContext.Provider value={{ color: "blue", verticalAlign: 'middle' }}>
+                        <FaSearch />
+                    </IconContext.Provider>
+                    <SearchFormButtonLabel>Search</SearchFormButtonLabel>
+                </SearchFormButton>
 
-                    <SearchFormInput
-                        type="text"
-                        autoComplete="off"
-                        autoFocus
-                        placeholder="Search images and photos"
-                        value={(this.state.searchValue)}
-                        onChange={this.handleChageSearchValue}
-                    />
-                </SearchForm>
-            </Header>
-        )
-    }
+                <SearchFormInput
+                    type="text"
+                    autoComplete="off"
+                    autoFocus
+                    placeholder="Search images and photos"
+                    value={searchValue}
+                    onChange={handleSearchValue}
+                />
+            </SearchForm>
+        </Header>
+    )
 }
 
 SearchBar.propTypes = {

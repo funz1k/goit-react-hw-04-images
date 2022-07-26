@@ -1,5 +1,6 @@
-import { Component } from 'react';
-import { ToastContainer } from 'react-toastify';
+import { useState, useEffect } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import SearchApi from 'service/Api';
 import Container from './Container';
 import ImageList from './ImageList';
@@ -8,88 +9,82 @@ import LoadMoreBtn from './LoadMoreBtn';
 import ModalLargeImg from './Modal';
 import SearchBar from './SearchBar';
 
+const App = () => {
+  const [images, setImages] = useState([]);
+  const [largeImages, setLargeImages] = useState(null);
+  const [page, setPage] = useState(1);
+  const [loadMore, setLoadMore] = useState(false);
+  const [value, setValue] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [error, setError] = useState(null);
 
+  useEffect(() => {
+    if (!value) {
+      return
+    };
 
-export class App extends Component {
-  state = {
-    images: [],
-    largeImage: null,
-    page: 1,
-    value: "",
-    loading: false,
-    showModal: false,
-    error: null,
-  }
-  componentDidUpdate(_, prevState) {
-    const { value, page } = this.state;
-    const options = { value, page };
+    setLoading(true);
 
-    if (prevState.value !== value) {
-      this.setState(() => ({ loading: true, images: [], error: null }));
-
-      SearchApi(options).then((images) => {
-        if (images.hits.length === 0) {
-          this.setState((error) => ({ error }));
-        }
-        this.setState({ images: images.hits });
-      })
-        .catch((error) => this.setState({ error }))
-        .finally(() => this.setState({ loading: false }));
-    }
-
-    if (prevState.page !== page && page !== 1) {
-      this.setState(() => ({ loading: true }));
-
-      SearchApi(options)
-        .then((images) =>
-          this.setState({
-            images: [...prevState.images, ...images.hits],
-          })
-        )
-        .finally(() => this.setState({ loading: false }));
-    }
-  }
-  handleSubmit = (value) => {
-    this.setState({
-      value: value,
-      page: 1
+    SearchApi(value, page).then(({ hits, totalHits }) => {
+      if (hits.length === 0) {
+        toast.error("Please enter something!", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+      }
+      setImages(prevImages => [...prevImages, ...hits]);
+      setLoadMore(page < Math.ceil(totalHits / 12));
     })
+      .catch((error) => setError(error))
+      .finally(() => setLoading(false));
+
+    setLoading(true);
+  }, [value, page, error])
+
+  const handleSubmit = value => {
+    setValue(value);
+    setPage(1);
+    setImages([]);
+    setError(null);
   }
 
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({ showModal: !showModal }));
+  const toggleModal = () => {
+    setShowModal(!showModal);
   };
 
-  onClose = (e) => {
+  const onClose = (e) => {
     if (e.target === e.currentTarget || e.code === "Escape") {
-      this.toggleModal();
+      toggleModal();
     }
   };
 
-  handleClickImage = (largeImage) => {
-    this.toggleModal();
-    this.setState({ largeImage });
+  const handleClickImage = largeImage => {
+    toggleModal();
+    setLargeImages(largeImage);
   };
 
 
-  handleLoadMore = () => {
-    this.setState((prevState) => ({ page: prevState.page + 1 }));
+  const handleLoadMore = () => {
+    setPage(page => page + 1)
   };
 
-  render() {
-
-    const { images, loading, showModal, largeImage, value } = this.state;
-
-    return (
-      <Container>
-        <SearchBar onSubmit={this.handleSubmit} />
-        {loading && <Loader />}
-        {images && <ImageList images={images} largeImage={this.handleClickImage} value={value} />}
-        {images.length !== 0 &&
-          (loading ? <Loader /> : <LoadMoreBtn onClick={this.handleLoadMore} />)}
-        {showModal && <ModalLargeImg onClose={this.onClose}>{largeImage}</ModalLargeImg>}
-        <ToastContainer autoClose={3000} />
-      </Container>
-    )
-  }
+  return (
+    <Container>
+      <SearchBar onSubmit={handleSubmit} />
+      {loading && <Loader />}
+      {images && <ImageList images={images} largeImage={handleClickImage} value={value} />}
+      {images.length !== 0 &&
+        (loadMore && <LoadMoreBtn onClick={handleLoadMore} />)}
+      {showModal && <ModalLargeImg onClose={onClose}>{largeImages}</ModalLargeImg>}
+      <ToastContainer autoClose={3000} />
+    </Container>
+  )
 }
+
+export default App;
